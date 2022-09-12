@@ -1,121 +1,143 @@
-Function Get-WAF-WebAclARN {
+Function Get-WAF2WebAclARN {
     <#
     .SYNOPSIS
-    Get-WAF-WebAclARN Function seek web ACL by its name and return ARN or $null if a web ACL is not found.
+    Get-WAF2WebAclARN Function seek web ACL by its name and return ARN or $null if a web ACL is not found.
     .DESCRIPTION
-    Get-WAF-WebAclARN Function seek web ACL by its name and return ARN or $null if a web ACL is not found.
+    Get-WAF2WebAclARN Function seek regional web ACL by its name and return ARN or $null if a web ACL is not found.
+    .PARAMETER WebAclName
+    Name of web ACL which is searched
+    .PARAMETER RegionName
+    Name of AWS Region where web ACL is searched
+    .PARAMETER AwsProfile
+    Name of user AWS profile name from .aws config file
+    .INPUTS
+    None. You cannot pipe objects to Get-WAF2WebAclARN.
+    .OUTPUTS
+    Get-WAF2WebAclARN returns $null or ARN of found web ACL
+    .EXAMPLE
+    PS> Get-WAF2WebAclARN "blog-web-acl"
+    Returns ARN of web ACL "blog-web-acl" in the us-west-1 region with default credentials
+    .EXAMPLE
+    PS> Get-WAF2WebAclARN "blog-web-acl" -RegionName "eu-west-1"
+    Returns ARN of web ACL "blog-web-acl" in the eu-west-1 region with default credentials
+    .EXAMPLE
+    PS> Get-WAF2WebAclARN "blog-web-acl" -AWSProfile "BlogAuthor"
+    Returns ARN of web ACL "blog-web-acl" in the us-west-1 region with  credentials defined by BlogAuthor profile
     #>
     [CmdletBinding(DefaultParameterSetName = 'Default')]
     Param (
         # web ACL name
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'Default')]
+        [ValidateNotNullOrEmpty()]
         [string]$WebAclName,
 
         # region name
         [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
         [string]$RegionName = "us-west-1",
 
         # AWS profile name from User .aws config file
         [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
         [string]$AwsProfile = "default"
     )
-    Begin {
-        $functionName = $($myInvocation.MyCommand.Name);
-        Write-Host "$($functionName)(webACL=$WebAclName, region=$RegionName, profile=$AwsProfile) starts." -ForegroundColor Blue;
 
-        $jsonObjects = $null;
-        $strJsonObjects = $null;
-        $awsObjects = $null;
-        $existObject = $false;
-    }
-    Process {
-        # list web ACLs with the provided name
-        $queryRequest = "WebACLs[?Name==``$webAclName``]";
-        $jsonObjects = aws --output json --profile $AwsProfile --region $RegionName --color on `
-            wafv2 list-web-acls `
-            --scope REGIONAL `
-            --query $queryRequest;
+    #region Initialization
+    $functionName = $($myInvocation.MyCommand.Name);
+    Write-Host "$($functionName)(webACL=$WebAclName, region=$RegionName, profile=$AwsProfile) starts." -ForegroundColor Blue;
+
+    $jsonObjects = $null;
+    $strJsonObjects = $null;
+    $awsObjects = $null;
+    $existObject = $false;
+    #endregion
+
+    #region List web ACLs with the provided name
+    $queryRequest = "WebACLs[?Name==``$WebAclName``]";
+    $jsonObjects = aws --output json --profile $AwsProfile --region $RegionName --color on `
+        wafv2 list-web-acls `
+        --scope REGIONAL `
+        --query $queryRequest;
         
-        if (-not $?) {
-            Write-Host "Listing web ACLs failed" -ForegroundColor Red;
-            return $null;
-        }
-        if ($jsonObjects) {
-            $strJsonObjects = [string]$jsonObjects;
-            $awsObjects = ConvertFrom-Json -InputObject $strJsonObjects;
-            $existObject = ($awsObjects.Count -gt 0);
-        }
-        if ($existObject) {
-            $webAclARN = $awsObjects.ARN;
-            Write-Verbose "Web ACL '$webAclName' is found, ARN=$webAclARN";
-            return $webAclARN;
-        }
-        else {
-            Write-Verbose "Web ACL '$webAclName' doesn't exist";
-            return $null;
-        }
+    if (-not $?) {
+        Write-Host "Listing web ACLs failed" -ForegroundColor Red;
+        return $null;
     }
-    End {
-        Write-Host "$($functionName) ends." -ForegroundColor Blue;
+    if ($jsonObjects) {
+        $strJsonObjects = [string]$jsonObjects;
+        $awsObjects = ConvertFrom-Json -InputObject $strJsonObjects;
+        $existObject = ($awsObjects.Count -gt 0);
     }
+    if ($existObject) {
+        $webAclARN = $awsObjects.ARN;
+        Write-Verbose "Web ACL '$WebAclName' is found, ARN=$webAclARN";
+        return $webAclARN;
+    }
+    else {
+        Write-Verbose "Web ACL '$WebAclName' doesn't exist";
+        return $null;
+    }
+    #endregion
 }
 
-Function Get-WAF-WebAclForResource {
+Function Get-WAF2WebAclForResource {
     <#
     .SYNOPSIS
-    Get-WAF-WebAclForResource Function return web ACL ARN if it is accosiated with the resource.
+    Get-WAF2WebAclForResource Function return web ACL ARN if it is accosiated with the resource.
     .DESCRIPTION
-    Get-WAF-WebAclForResource Function return web ACL ARN if it is accosiated with the resource. If a resource ARN is wrong or a web ACL is not accosiated with the resource, $null is returned.
+    Get-WAF2WebAclForResource Function return web ACL ARN if it is accosiated with the resource. If a resource ARN is wrong or a web ACL is not accosiated with the resource, $null is returned.
     #>
     [CmdletBinding(DefaultParameterSetName = 'Default')]
     Param (
         # resource ARN
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'Default')]
+        [ValidateNotNullOrEmpty()]
         [string]$ResourceARN,
 
         # region name
         [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
         [string]$RegionName = "us-west-1",
 
         # AWS profile name from User .aws config file
         [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
         [string]$AwsProfile = "default"
     )
-    Begin {
-        $functionName = $($myInvocation.MyCommand.Name);
-        Write-Host "$($functionName)(Resource=$ResourceARN, region=$RegionName, profile=$AwsProfile) starts." -ForegroundColor Blue;
-
-        $jsonObjects = $null;
-        $strJsonObjects = $null;
-        $awsObjects = $null;
-        $existObject = $false;
-    }
-    Process {
-        $jsonObjects = aws --output json --profile $AwsProfile --region $RegionName --color on `
-            wafv2 get-web-acl-for-resource `
-            --resource-arn $ResourceARN;
     
-        if (-not $?) {
-            Write-Host "Getting web ACL associated with the resource failed, check the Resource ARN";
-            return $null;
-        }
+    #region Initialization
+    $functionName = $($myInvocation.MyCommand.Name);
+    Write-Host "$($functionName)(Resource=$ResourceARN, region=$RegionName, profile=$AwsProfile) starts." -ForegroundColor Blue;
 
-        if ($jsonObjects) {
-            $strJsonObjects = [string]$jsonObjects;
-            $awsObjects = ConvertFrom-Json -InputObject $strJsonObjects;
-            $existObject = ($awsObjects.Count -gt 0);
-        }
-        if ($existObject) {
-            $webAclARN = $awsObjects.WebACL.ARN;
-            Write-Verbose "Web ACL ARN=$webAclARN is associated with the resource";
-            return $webAclARN;
-        }
-        else {
-            Write-Verbose "The resource doesn't have associated web ACL";
-            return $null;
-        }
+    $jsonObjects = $null;
+    $strJsonObjects = $null;
+    $awsObjects = $null;
+    $existObject = $false;
+    #endregion
+
+    #region List accosiated Web ACL with resource
+    $jsonObjects = aws --output json --profile $AwsProfile --region $RegionName --color on `
+        wafv2 get-web-acl-for-resource `
+        --resource-arn $ResourceARN;
+    
+    if (-not $?) {
+        Write-Host "Getting web ACL associated with the resource failed, check the Resource ARN" -ForegroundColor Red;
+        return $null;
     }
-    End {
-        Write-Host "$($functionName) ends." -ForegroundColor Blue;
+
+    if ($jsonObjects) {
+        $strJsonObjects = [string]$jsonObjects;
+        $awsObjects = ConvertFrom-Json -InputObject $strJsonObjects;
+        $existObject = ($awsObjects.Count -gt 0);
     }
+    if ($existObject) {
+        $webAclARN = $awsObjects.WebACL.ARN;
+        Write-Verbose "Web ACL ARN=$webAclARN is associated with the resource";
+        return $webAclARN;
+    }
+    else {
+        Write-Verbose "The resource doesn't have associated web ACL";
+        return $null;
+    }
+    #endregion
 }

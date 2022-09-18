@@ -96,7 +96,7 @@ Function Get-WAF2WebAclForResource {
     .INPUTS
     None. You cannot pipe objects to Get-WAF2WebAclForResource.
     .OUTPUTS
-    Get-WAF2WebAclForResource returns $null or ARN of found web ACL
+    Get-WAF2WebAclForResource returns $null or ARN of associated web ACL
     .EXAMPLE
     PS> Get-WAF2WebAclForResource "arn:aws:elasticloadbalancing:us-west-1:123456789012:loadbalancer/app/load-balancer-EXAMPLE/0123456789abcdef"
     Returns ARN of web ACL if it associated with "load-balancer-EXAMPLE" Load Balancer in the us-west-1 region, otherwise return $null. To call AWS CLI the function uses default credentials.

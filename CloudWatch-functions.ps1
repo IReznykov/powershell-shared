@@ -80,12 +80,35 @@ Function Get-CloudWatchLogGroupARN {
     #endregion
 }
 
-Function New-CloudWatch-LogGroup {
+Function New-CloudWatchLogGroup {
     <#
     .SYNOPSIS
-    New-CloudWatch-LogGroup Function create new CloudWatch log group and return its ARN.
+    New-CloudWatchLogGroup Function create new CloudWatch log group and return its ARN.
     .DESCRIPTION
-    New-CloudWatch-LogGroup Function create new CloudWatch log group and return its ARN. If Cloud Watch log group is not created, $null is returned.
+    New-CloudWatchLogGroup Function check for the existent log group. If it exists, its ARN is returned. If the log group doesn't exist, Function create new CloudWatch log group and return its ARN. If the creation of CloudWatch log group failed, $null is returned.
+    .PARAMETER LogGroupName
+    Name of CloudWatch log group which is searched
+    .PARAMETER RetentionDays
+    Retention in days of log group's streams
+    .PARAMETER Tags
+    Tags of log group. Could be $null.
+    .PARAMETER RegionName
+    Name of AWS Region where log group is searched
+    .PARAMETER AwsProfile
+    Name of user AWS profile name from .aws config file
+    .INPUTS
+    None. You cannot pipe objects to New-CloudWatchLogGroup.
+    .OUTPUTS
+    New-CloudWatchLogGroup returns $null or ARN of CloudWatch log group
+    .EXAMPLE
+    PS> New-CloudWatchLogGroup "blog-log-group"
+    Returns ARN of log group "blog-log-group" in the us-west-1 region using default credentials
+    .EXAMPLE
+    PS> New-CloudWatchLogGroup "blog-log-group"
+    Returns ARN of log group "blog-log-group" in the us-west-1 region using default credentials
+    .EXAMPLE
+    PS> New-CloudWatchLogGroup -LogGroupName "blog-log-group" -RetentionDays 90 -Tags "Key1=Value1,Key2=Value2" -RegionName "eu-west-1" -AwsProfile "BlogAuthor"
+    Returns ARN of new or existent log group "blog-log-group" with retention period 6 months in the eu-west-1 region using credentials defined by BlogAuthor profile
     #>
     [CmdletBinding(DefaultParameterSetName = 'Default')]
     Param (
@@ -97,11 +120,11 @@ Function New-CloudWatch-LogGroup {
         # log retention in days
         [Parameter(Mandatory = $false, Position = 1, ParameterSetName = 'Default')]
         [ValidateRange(1, 360)]
-        [string]$RetentionDays = 180,
+        [int]$RetentionDays = 180,
 
-        # Tags that are added to AWS resources in the form @( "Key=Key1,Value=Value1", "Key=Key2,Value=Value2" )
+        # tags of log group
         [Parameter(Mandatory = $false, Position = 2, ParameterSetName = 'Default')]
-        [array]$Tags = $null,
+        [string]$Tags = $null,
 
         # region name
         [Parameter(Mandatory = $false)]
